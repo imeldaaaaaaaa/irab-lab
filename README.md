@@ -46,3 +46,10 @@ Untuk memperbarui: `git add .`, `git commit -m "Update Bedah I'rab"`, lalu `git 
 3. Aktifkan RLS dan uji tiap role dengan akun berbeda.
 4. Buat CRUD bank soal untuk admin dan manajemen kelas untuk guru.
 5. Tambahkan validasi materi dan tes otomatis untuk jawaban i‘rab.
+
+
+## Pembaruan bank latihan v0.2.1
+
+- Bank latihan diperluas menjadi 50 kalimat, termasuk beberapa variasi untuk mubtada’-khabar, na‘t-man‘ūt, iḍāfah, fā‘il-maf‘ūl bih, inna/kāna, fi‘il muḍāri‘, jar-majrūr, ḥāl, ‘aṭaf, ẓarf makān, dan badal.
+- Di halaman Materi, pilih topik untuk menyaring latihan yang relevan. Topik yang belum memiliki bank soal khusus akan ditandai sebagai materi yang sedang disiapkan.
+- Kunci dan pembahasan tetap berupa data terstruktur; periksa materi Arab bersama pengajar sebelum digunakan untuk penilaian formal.
