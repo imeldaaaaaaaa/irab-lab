@@ -1,158 +1,66 @@
-'use client';
+"use client";
 
-import { useMemo, useState } from 'react';
-import { caseStates, exercises, positions, signs, wordKinds, type CaseState, type Exercise, type Position, type Sign, type SourceType, type WordKind } from '@/data/exercises';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { exercises, positions, wordKinds, caseStates, signs, type Exercise, type WordKind, type CaseState, type Sign } from '@/data/exercises';
 
-type Answer = { kind: WordKind; position: Position; state: CaseState; sign: Sign };
-const emptyAnswer: Answer = { kind: 'Isim', position: 'Fā‘il', state: 'Marfū‘', sign: 'Ḍammah' };
-const sourceFilters: Array<'Semua' | SourceType> = ['Semua', 'Umum', 'Teks klasik', "Al-Qur'an"];
-
-function AppIcon({ name }: { name: string }) {
-  const icons: Record<string, string> = { book: '▤', target: '◎', chart: '▥', spark: '✦', arrow: '↗', check: '✓', lock: '⌑', reset: '↻' };
-  return <span aria-hidden="true" className="icon">{icons[name] ?? '•'}</span>;
-}
-
-export default function Home() {
-  const [source, setSource] = useState<'Semua' | SourceType>('Semua');
-  const [exerciseId, setExerciseId] = useState(exercises[0].id);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, Answer>>({});
-  const [checked, setChecked] = useState(false);
-  const [hintShown, setHintShown] = useState(false);
-  const [completed, setCompleted] = useState<string[]>([]);
-
-  const availableExercises = useMemo(() => exercises.filter((item) => source === 'Semua' || item.source === source), [source]);
-  const exercise: Exercise = availableExercises.find((item) => item.id === exerciseId) ?? availableExercises[0] ?? exercises[0];
-  const activeIndex = Math.min(selectedIndex, exercise.words.length - 1);
-  const activeWord = exercise.words[activeIndex];
-  const answerKey = `${exercise.id}:${activeIndex}`;
-  const answer = answers[answerKey] ?? { kind: activeWord.kind, position: emptyAnswer.position, state: emptyAnswer.state, sign: emptyAnswer.sign };
-  const isCorrect = answer.kind === activeWord.kind && answer.position === activeWord.position && answer.state === activeWord.state && answer.sign === activeWord.sign;
-  const answeredCount = Object.keys(answers).filter((key) => key.startsWith(`${exercise.id}:`)).length;
-  const correctCount = exercise.words.filter((word, index) => {
-    const a = answers[`${exercise.id}:${index}`];
-    return a && a.kind === word.kind && a.position === word.position && a.state === word.state && a.sign === word.sign;
-  }).length;
-
-  function changeSource(next: 'Semua' | SourceType) {
-    setSource(next);
-    const first = exercises.find((item) => next === 'Semua' || item.source === next);
-    if (first) setExerciseId(first.id);
-    setSelectedIndex(0);
-    setChecked(false);
-    setHintShown(false);
-  }
-  function changeExercise(id: string) {
-    setExerciseId(id);
-    setSelectedIndex(0);
-    setChecked(false);
-    setHintShown(false);
-  }
-  function updateAnswer<K extends keyof Answer>(key: K, value: Answer[K]) {
-    setAnswers((prev) => ({ ...prev, [answerKey]: { ...(prev[answerKey] ?? emptyAnswer), [key]: value } }));
-    setCompleted((prev) => prev.filter((key) => key !== answerKey));
-    setChecked(false);
-  }
-  function checkAnswer() {
-    setChecked(true);
-    if (isCorrect && !completed.includes(answerKey)) setCompleted((prev) => [...prev, answerKey]);
-  }
-  function resetExercise() {
-    setAnswers((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => !key.startsWith(`${exercise.id}:`))));
-    setCompleted((prev) => prev.filter((key) => !key.startsWith(`${exercise.id}:`)));
-    setSelectedIndex(0);
-    setChecked(false);
-    setHintShown(false);
-  }
-  function nextWord() {
-    setSelectedIndex((prev) => (prev + 1) % exercise.words.length);
-    setChecked(false);
-    setHintShown(false);
-  }
-
-  return (
-    <main className="app-shell">
-      <aside className="sidebar">
-        <a className="brand" href="#top" aria-label="Bedah I'rab beranda">
-          <span className="brand-mark">بِ</span>
-          <span><strong>bedah<span className="brand-green">i‘rab</span></strong><small>LABORATORIUM NAHWU</small></span>
-        </a>
-        <div className="sidebar-label">RUANG BELAJAR</div>
-        <nav className="nav-list" aria-label="Navigasi utama">
-          <a className="nav-item active" href="#workspace"><AppIcon name="target"/> Bedah kalimat <span className="nav-dot"/></a>
-          <a className="nav-item" href="#materi"><AppIcon name="book"/> Materi Nahwu</a>
-          <a className="nav-item" href="#progress"><AppIcon name="chart"/> Progres belajar</a>
-        </nav>
-        <div className="sidebar-spacer"/>
-        <div className="sidebar-note">
-          <div className="note-icon"><AppIcon name="spark"/></div>
-          <strong>Belajar sampai paham.</strong>
-          <p>Setiap kata punya alasan. Temukan kaidahnya, bukan sekadar jawabannya.</p>
-        </div>
-        <div className="sidebar-footer"><span className="status-dot"/> Versi belajar 0.1 <span>•</span> Dibuat untuk penuntut ilmu</div>
-      </aside>
-
-      <section className="main-area" id="top">
-        <header className="topbar">
-          <div className="breadcrumb">Ruang belajar <span>/</span> <strong>Bedah kalimat</strong></div>
-          <div className="topbar-right"><span className="level-pill"><span>✦</span> PEMULA</span><div className="avatar">ط</div></div>
-        </header>
-
-        <div className="page-content" id="workspace">
-          <div className="page-heading">
-            <div>
-              <div className="eyebrow"><span/> INTERACTIVE NAHWU LAB</div>
-              <h1>Bedah <em>i‘rab.</em></h1>
-              <p>Kenali setiap kata, temukan kedudukannya, pahami alasannya.</p>
-            </div>
-            <div className="heading-decoration" aria-hidden="true"><span>ا</span><span>ل</span><span>ن</span><span>ح</span><span>و</span></div>
-          </div>
-
-          <section className="stats-grid" aria-label="Ringkasan latihan">
-            <div className="stat-card"><div className="stat-icon green"><AppIcon name="book"/></div><div><span className="stat-label">KALIMAT TERSEDIA</span><strong>{exercises.length.toString().padStart(2, '0')} <small>latihan</small></strong></div><span className="stat-corner">↗</span></div>
-            <div className="stat-card"><div className="stat-icon cream"><AppIcon name="target"/></div><div><span className="stat-label">KATA DIKUPAS</span><strong>{completed.length.toString().padStart(2, '0')} <small>jawaban benar</small></strong></div><span className="stat-corner">✳</span></div>
-            <div className="stat-card"><div className="stat-icon lavender"><AppIcon name="spark"/></div><div><span className="stat-label">MODE BELAJAR</span><strong>Aktif <small>mandiri</small></strong></div><span className="stat-corner">✦</span></div>
-          </section>
-
-          <div className="section-heading"><div><span className="section-kicker">MULAI DARI SINI</span><h2>Ruang bedah kalimat</h2></div><button className="text-button" onClick={resetExercise}><AppIcon name="reset"/> Ulangi latihan</button></div>
-
-          <div className="workspace-grid">
-            <section className="sentence-card">
-              <div className="card-topline"><div className="source-tag"><span className={`source-dot ${exercise.source === "Al-Qur'an" ? 'quran' : exercise.source === 'Teks klasik' ? 'classic' : ''}`}/>{exercise.source}</div><span className="exercise-number">LATIHAN {String(exercises.findIndex((e) => e.id === exercise.id) + 1).padStart(2, '0')} / {String(exercises.length).padStart(2, '0')}</span></div>
-              <h3>{exercise.title}</h3>
-              <div className="arabic-stage" dir="rtl" lang="ar">
-                <div className="arabic-sentence">{exercise.words.map((word, index) => <button key={`${exercise.id}-${word.token}`} className={`word-chip ${activeIndex === index ? 'selected' : ''} ${checked && activeIndex === index ? (isCorrect ? 'word-correct' : 'word-wrong') : ''}`} onClick={() => { setSelectedIndex(index); setChecked(false); setHintShown(false); }} aria-pressed={activeIndex === index}>{word.token}</button>)}</div>
-                <div className="arabic-translation" dir="ltr">“{exercise.translation}”</div>
-              </div>
-              <div className="sentence-context"><span className="context-icon">i</span><p>{exercise.context}{exercise.reference ? <strong> {exercise.reference}</strong> : null}</p></div>
-              <div className="word-progress"><div className="progress-label"><span>KATA DALAM KALIMAT</span><strong>{activeIndex + 1} <small>/ {exercise.words.length}</small></strong></div><div className="progress-track">{exercise.words.map((word, index) => <button key={`${word.token}-progress`} onClick={() => { setSelectedIndex(index); setChecked(false); setHintShown(false); }} className={`progress-segment ${index <= activeIndex ? 'filled' : ''} ${completed.includes(`${exercise.id}:${index}`) ? 'done' : ''}`} aria-label={`Pilih kata ${word.token}`}/>)}</div></div>
-              <div className="word-picker-label">PILIH KATA UNTUK DIBEDAH</div>
-              <div className="word-picker" dir="rtl">{exercise.words.map((word, index) => <button key={`pick-${word.token}`} onClick={() => { setSelectedIndex(index); setChecked(false); setHintShown(false); }} className={`word-pick ${activeIndex === index ? 'active' : ''}`}>{word.token}<span>{index + 1}</span></button>)}</div>
-              <div className="sentence-actions"><button className="button-secondary" onClick={() => setHintShown((prev) => !prev)}><AppIcon name="spark"/>{hintShown ? 'Sembunyikan petunjuk' : 'Beri aku petunjuk'}</button><button className="button-primary" onClick={nextWord}>Kata berikutnya <AppIcon name="arrow"/></button></div>
-              {hintShown && <div className="hint-box"><strong>Petunjuk kecil</strong><p>{activeWord.kind === 'Fi’il' ? 'Cari bentuk kata yang menunjukkan pekerjaan atau keadaan. Perhatikan juga apakah waktunya lampau, sekarang/akan datang, atau berupa perintah.' : activeWord.kind === 'Huruf' ? 'Perhatikan apakah kata ini memiliki makna gramatikal yang memengaruhi kata setelahnya.' : 'Tanyakan peran kata ini: apakah menjadi pokok pembicaraan, informasi, pelaku, objek, atau mengikuti kata lain?'}</p></div>}
-            </section>
-
-            <section className="analysis-card">
-              <div className="analysis-heading"><div className="analysis-symbol">ت</div><div><span className="section-kicker">ANALISIS KATA</span><h3>Bedah morfologi & nahwu</h3></div></div>
-              <div className="active-word-banner"><div><span>KATA YANG DIPILIH</span><strong dir="rtl" lang="ar">{activeWord.token}</strong></div><span className="word-index-badge">Kata {activeIndex + 1}</span></div>
-              <div className="form-fields">
-                <label className="field"><span><b>01</b> Jenis kata <i>نوع الكلمة</i></span><select value={answer.kind} onChange={(e) => updateAnswer('kind', e.target.value as WordKind)}><option value="Isim">Isim (اسم)</option><option value="Fi’il">Fi‘il (فعل)</option><option value="Huruf">Huruf (حرف)</option></select></label>
-                <label className="field"><span><b>02</b> Kedudukan nahwu <i>المحل الإعرابي</i></span><select value={answer.position} onChange={(e) => updateAnswer('position', e.target.value as Position)}>{positions.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-                <label className="field"><span><b>03</b> Status i‘rab <i>الحالة الإعرابية</i></span><select value={answer.state} onChange={(e) => updateAnswer('state', e.target.value as CaseState)}>{caseStates.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-                <label className="field"><span><b>04</b> Tanda i‘rab <i>علامة الإعراب</i></span><select value={answer.sign} onChange={(e) => updateAnswer('sign', e.target.value as Sign)}>{signs.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-              </div>
-              <button className="button-check" onClick={checkAnswer}><AppIcon name="check"/> Periksa jawaban <span>→</span></button>
-              {checked && <div className={`feedback-box ${isCorrect ? 'success' : 'error'}`} role="status"><div className="feedback-title"><span>{isCorrect ? '✓' : '!'}</span><strong>{isCorrect ? 'Tepat sekali! Jawabanmu benar.' : 'Belum tepat. Coba periksa lagi.'}</strong></div><p>{isCorrect ? activeWord.explanation : 'Perhatikan hubungan kata ini dengan kata lain dalam kalimat. Gunakan petunjuk, lalu sesuaikan jenis kata, kedudukan, status, dan tandanya.'}</p>{isCorrect && <div className="full-irab" dir="rtl" lang="ar">{activeWord.fullIrab}</div>}<button className="feedback-link" onClick={() => setHintShown(true)}>Lihat petunjuk <span>↗</span></button></div>}
-              <div className="analysis-footnote"><AppIcon name="lock"/><span>Jawaban diperiksa menggunakan kunci latihan terstruktur, bukan penilaian AI.</span></div>
-            </section>
-          </div>
-
-          <section className="exercise-library" id="materi"><div className="section-heading"><div><span className="section-kicker">PERPUSTAKAAN LATIHAN</span><h2>Pilih sumber belajarmu</h2></div><span className="library-count">{availableExercises.length} latihan</span></div><div className="filter-row">{sourceFilters.map((item) => <button key={item} className={`filter-pill ${source === item ? 'selected' : ''}`} onClick={() => changeSource(item)}>{item === 'Semua' ? 'Semua sumber' : item}</button>)}</div><div className="exercise-list">{availableExercises.map((item, index) => <button key={item.id} className={`exercise-row ${exercise.id === item.id ? 'current' : ''}`} onClick={() => changeExercise(item.id)}><span className={`exercise-type-icon ${item.source === "Al-Qur'an" ? 'quran' : item.source === 'Teks klasik' ? 'classic' : ''}`}>{item.source === "Al-Qur'an" ? '۞' : item.source === 'Teks klasik' ? 'ك' : 'ع'}</span><span className="exercise-row-text"><strong>{item.title}</strong><small>{item.source}{item.reference ? ` · ${item.reference}` : ''}</small></span><span className="exercise-arabic" dir="rtl" lang="ar">{item.sentence}</span><span className="row-arrow">↗</span></button>)}</div></section>
-
-          <section className="progress-section" id="progress"><div><span className="section-kicker">PROGRES SESI INI</span><h2>Terus latih kepekaan nahwumu.</h2><p>Latihan benar tersimpan sementara di sesi browser ini. Akun dan sinkronisasi lintas perangkat bisa ditambahkan pada tahap berikutnya.</p></div><div className="progress-summary"><div className="progress-ring"><div><strong>{completed.length}</strong><span>benar</span></div></div><div className="progress-summary-text"><strong>{completed.length} jawaban benar</strong><span>{Math.max(0, exercises.reduce((sum, item) => sum + item.words.length, 0) - completed.length)} kesempatan latihan tersisa di bank soal demo</span></div></div></section>
-          <footer className="main-footer"><span>بِسْمِ الْعِلْمِ نَبْدَأُ</span><p>Bedah I‘rab · Belajar Nahwu dengan memahami alasan.</p><span className="footer-version">PROTOTIPE 0.1.0</span></footer>
-        </div>
-      </section>
-    </main>
-  );
+type Role = 'Siswa' | 'Guru' | 'Admin';
+type User = { name: string; role: Role; email: string };
+type Answer = { kind: WordKind; position: string; state: CaseState; sign: Sign };
+type ProgressRecord = { user: User; correct: number; attempts: number; completed: string[]; updatedAt: string };
+const blank: Answer = { kind: 'Isim', position: 'Mubtada’', state: 'Marfū‘', sign: 'Ḍammah' };
+const lessonGroups = [
+ {title:'Dasar-dasar kalimah',desc:'Kenali jenis kata dan sifatnya.',topics:['Isim, fi‘il, huruf','Mu‘rab dan mabnī','Ma‘rifah dan nakirah','Mufrad, mutsanna, jamak']},
+ {title:'Jumlah ismiyyah',desc:'Susunan kalimat yang diawali isim.',topics:['Mubtada’ dan khabar','Khabar mufrad, jumlah, syibh jumlah','Kāna wa akhawātuhā','Inna wa akhawātuhā']},
+ {title:'Jumlah fi‘liyyah',desc:'Fi‘il, pelaku, objek, dan pelengkap.',topics:['Fi‘il māḍī, muḍāri‘, amr','Fā‘il dan nā’ib al-fā‘il','Maf‘ūl bih','Maf‘ūl muṭlaq, li-ajlih, fīh']},
+ {title:'Tawābi‘ dan struktur isim',desc:'Kata yang mengikuti kata lain.',topics:['Na‘t dan man‘ūt','‘Aṭaf dan ma‘ṭūf','Taukīd','Badal','Muḍāf dan muḍāf ilaih']},
+ {title:'Huruf dan i‘rab lanjutan',desc:'Pengaruh amil pada kata sesudahnya.',topics:['Huruf jar dan isim majrūr','Fi‘il muḍāri‘ manṣūb','Fi‘il muḍāri‘ majzūm','Ḥāl dan tamyīz','Istitsnā’ dan munādā']}
+];
+function Icon({children}:{children:ReactNode}) { return <span className="icon" aria-hidden="true">{children}</span>; }
+function readStore<T>(key:string,fallback:T):T { try { if(typeof window==='undefined') return fallback; const raw=localStorage.getItem(key); return raw?JSON.parse(raw) as T:fallback; } catch { return fallback; } }
+export default function Home(){
+ const [source,setSource]=useState<'Semua'|'Umum'|'Teks klasik'|"Al-Qur'an">('Semua');
+ const [exerciseId,setExerciseId]=useState(exercises[0].id); const [wordIndex,setWordIndex]=useState(0);
+ const [answers,setAnswers]=useState<Record<string,Answer>>({}); const [checked,setChecked]=useState(false); const [hint,setHint]=useState(false);
+ const [completed,setCompleted]=useState<string[]>([]); const [user,setUser]=useState<User|null>(null); const [allProgress,setAllProgress]=useState<ProgressRecord[]>([]);
+ const [showLogin,setShowLogin]=useState(false); const [loginName,setLoginName]=useState(''); const [loginEmail,setLoginEmail]=useState(''); const [loginRole,setLoginRole]=useState<Role>('Siswa');
+ const [activeTab,setActiveTab]=useState<'Latihan'|'Materi'|'Progres'|'Panel'>('Latihan'); const [notice,setNotice]=useState('');
+ useEffect(()=>{setUser(readStore<User|null>('irab_demo_user',null));setAllProgress(readStore<ProgressRecord[]>('irab_demo_records',[]));},[]);
+ useEffect(()=>{if(user?.role==='Siswa'){setCompleted(readStore<string[]>('irab_demo_progress_'+user.email,[]));}},[user]);
+ const available=useMemo(()=>exercises.filter(e=>source==='Semua'||e.source===source),[source]);
+ const exercise=available.find(e=>e.id===exerciseId)||available[0]||exercises[0]; const activeIndex=Math.min(wordIndex,exercise.words.length-1); const word=exercise.words[activeIndex];
+ const key=`${exercise.id}:${activeIndex}`; const answer=answers[key]||{kind:word.kind,position:blank.position,state:blank.state,sign:blank.sign};
+ const isCorrect=answer.kind===word.kind&&answer.position===word.position&&answer.state===word.state&&answer.sign===word.sign;
+ const totalWords=exercises.reduce((n,e)=>n+e.words.length,0); const studentRecords=allProgress.filter(r=>r.user.role==='Siswa');
+ function chooseExercise(e:Exercise){setExerciseId(e.id);setWordIndex(0);setChecked(false);setHint(false);setActiveTab('Latihan');}
+ function setField<K extends keyof Answer>(field:K,value:Answer[K]){setAnswers(prev=>({...prev,[key]:{...(prev[key]||blank),[field]:value}}));setChecked(false);}
+ function check(){setChecked(true);if(isCorrect){const next=completed.includes(key)?completed:[...completed,key];setCompleted(next);if(user?.role==='Siswa'){localStorage.setItem('irab_demo_progress_'+user.email,JSON.stringify(next));const record:ProgressRecord={user,correct:next.length,attempts:Object.keys(answers).length+1,completed:next,updatedAt:new Date().toISOString()};const records=readStore<ProgressRecord[]>('irab_demo_records',[]).filter(r=>r.user.email!==user.email);records.push(record);localStorage.setItem('irab_demo_records',JSON.stringify(records));setAllProgress(records);}}}
+ function login(){if(!loginName.trim()||!loginEmail.trim()){setNotice('Isi nama dan email untuk melanjutkan.');return;}const next:User={name:loginName.trim(),email:loginEmail.trim().toLowerCase(),role:loginRole};localStorage.setItem('irab_demo_user',JSON.stringify(next));setUser(next);setShowLogin(false);setNotice(`Mode demo ${loginRole.toLowerCase()} aktif. Baca catatan demo sebelum dipakai untuk data nyata.`);setActiveTab(loginRole==='Siswa'?'Latihan':'Panel');}
+ function logout(){localStorage.removeItem('irab_demo_user');setUser(null);setCompleted([]);setActiveTab('Latihan');setNotice('Kamu keluar dari mode demo.');}
+ function changeSource(s:typeof source){setSource(s);const first=exercises.find(e=>s==='Semua'||e.source===s);if(first)chooseExercise(first);}
+ return <main className="app-shell">
+  <aside className="sidebar"><a className="brand" href="#top"><span className="brand-mark">بِ</span><span><strong>bedah<span className="brand-green">i‘rab</span></strong><small>LABORATORIUM NAHWU</small></span></a>
+   <div className="sidebar-label">RUANG BELAJAR</div><nav className="nav-list"><button className={`nav-item ${activeTab==='Latihan'?'active':''}`} onClick={()=>setActiveTab('Latihan')}><Icon>◎</Icon> Bedah kalimat</button><button className={`nav-item ${activeTab==='Materi'?'active':''}`} onClick={()=>setActiveTab('Materi')}><Icon>▤</Icon> Materi Nahwu</button><button className={`nav-item ${activeTab==='Progres'?'active':''}`} onClick={()=>setActiveTab('Progres')}><Icon>▥</Icon> Progres belajar</button>{user&&user.role!=='Siswa'&&<button className={`nav-item ${activeTab==='Panel'?'active':''}`} onClick={()=>setActiveTab('Panel')}><Icon>⚙</Icon> Panel {user.role}</button>}</nav>
+   <div className="sidebar-spacer"/><div className="sidebar-note"><div className="note-icon">✦</div><strong>Belajar sampai paham.</strong><p>Setiap kata punya alasan. Temukan kaidahnya, bukan sekadar jawabannya.</p></div><div className="sidebar-footer"><span className="status-dot"/> Prototipe v0.2 <span>•</span> Nahwu interaktif</div>
+  </aside>
+  <section className="main-area" id="top"><header className="topbar"><div className="breadcrumb">Ruang belajar <span>/</span> <strong>{activeTab==='Latihan'?'Bedah kalimat':activeTab==='Materi'?'Materi Nahwu':activeTab==='Progres'?'Progres belajar':'Panel '+(user?.role||'')}</strong></div><div className="topbar-right">{user?<><span className="user-chip"><span className="avatar">{user.role==='Admin'?'A':user.role==='Guru'?'G':'ط'}</span><span><b>{user.name}</b><small>{user.role} · mode demo</small></span></span><button className="button-secondary small" onClick={logout}>Keluar</button></>:<><span className="guest-pill">PENGUNJUNG</span><button className="button-primary small" onClick={()=>{setShowLogin(true);setNotice('');}}>Masuk / Daftar</button></>}</div></header>
+  <div className="page-content">
+   <div className="page-heading"><div><div className="eyebrow"><span/> INTERACTIVE NAHWU LAB</div><h1>Bedah <em>i‘rab.</em></h1><p>Kenali setiap kata, temukan kedudukannya, pahami alasannya.</p></div><div className="heading-decoration" aria-hidden="true"><span>ا</span><span>ل</span><span>ن</span><span>ح</span><span>و</span></div></div>
+   {notice&&<div className="notice" role="status"><span>ⓘ</span>{notice}<button onClick={()=>setNotice('')} aria-label="Tutup">×</button></div>}
+   {!user&&<div className="guest-banner"><div><strong>Belajar sebagai pengunjung</strong><p>Semua latihan dan materi bisa dibuka tanpa login. Progres tidak disimpan sebagai riwayat akun.</p></div><button className="button-secondary" onClick={()=>setShowLogin(true)}>Simpan progres ↗</button></div>}
+   {activeTab==='Latihan'&&<>
+    <section className="stats-grid"><div className="stat-card"><div className="stat-icon green">▤</div><div><span className="stat-label">BANK LATIHAN</span><strong>{exercises.length} <small>kalimat</small></strong></div></div><div className="stat-card"><div className="stat-icon cream">◎</div><div><span className="stat-label">TOPIK MATERI</span><strong>25+ <small>pokok bahasan</small></strong></div></div><div className="stat-card"><div className="stat-icon lavender">✦</div><div><span className="stat-label">STATUS</span><strong>{user?user.role:'Pengunjung'} <small>{user?'mode demo':'akses terbuka'}</small></strong></div></div></section>
+    <div className="section-heading"><div><span className="section-kicker">MULAI DARI SINI</span><h2>Ruang bedah kalimat</h2></div><button className="text-button" onClick={()=>{setAnswers({});setCompleted([]);setChecked(false);setHint(false);if(user?.role==='Siswa')localStorage.setItem('irab_demo_progress_'+user.email,'[]');}}>↻ Ulangi latihan</button></div>
+    <div className="workspace-grid"><section className="sentence-card"><div className="card-topline"><div className="source-tag"><span className={`source-dot ${exercise.source==='Al-Qur\'an'?'quran':exercise.source==='Teks klasik'?'classic':''}`}/>{exercise.source}</div><span className="exercise-number">LATIHAN {String(exercises.findIndex(e=>e.id===exercise.id)+1).padStart(2,'0')} / {String(exercises.length).padStart(2,'0')}</span></div><h3>{exercise.title}</h3><div className="topic-tag">{exercise.topic}</div>
+     <div className="arabic-stage" dir="rtl" lang="ar"><div className="arabic-sentence">{exercise.words.map((w,i)=><button key={exercise.id+w.token} className={`word-chip ${activeIndex===i?'selected':''} ${checked&&activeIndex===i?(isCorrect?'word-correct':'word-wrong'):''}`} onClick={()=>{setWordIndex(i);setChecked(false);setHint(false);}}>{w.token}</button>)}</div><div className="arabic-translation" dir="ltr">“{exercise.translation}”</div></div>
+     <div className="sentence-context"><span className="context-icon">i</span><p>{exercise.context} {exercise.reference&&<strong>{exercise.reference}</strong>}</p></div><div className="word-progress"><div className="progress-label"><span>KATA DALAM KALIMAT</span><strong>{activeIndex+1} <small>/ {exercise.words.length}</small></strong></div><div className="progress-track">{exercise.words.map((w,i)=><button key={w.token+i} className={`progress-segment ${i<=activeIndex?'filled':''} ${completed.includes(`${exercise.id}:${i}`)?'done':''}`} onClick={()=>{setWordIndex(i);setChecked(false);}} aria-label={'Pilih '+w.token}/>)}</div></div><div className="word-picker-label">PILIH KATA UNTUK DIBEDAH</div><div className="word-picker" dir="rtl">{exercise.words.map((w,i)=><button key={w.token+i+'p'} onClick={()=>{setWordIndex(i);setChecked(false);setHint(false);}} className={`word-pick ${activeIndex===i?'active':''}`}>{w.token}<span>{i+1}</span></button>)}</div><div className="sentence-actions"><button className="button-secondary" onClick={()=>setHint(!hint)}>✦ {hint?'Sembunyikan petunjuk':'Beri aku petunjuk'}</button><button className="button-primary" onClick={()=>{setWordIndex((wordIndex+1)%exercise.words.length);setChecked(false);setHint(false);}}>Kata berikutnya →</button></div>{hint&&<div className="hint-box"><strong>Petunjuk kecil</strong><p>{word.explanation.split(';')[0]} Coba pikirkan hubungan kata ini dengan kata lain dalam kalimat.</p></div>}</section>
+    <section className="analysis-card"><div className="analysis-heading"><div className="analysis-symbol">ت</div><div><span className="section-kicker">ANALISIS KATA</span><h3>Bedah morfologi & nahwu</h3></div></div><div className="active-word-banner"><div><span>KATA YANG DIPILIH</span><strong dir="rtl" lang="ar">{word.token}</strong></div><span className="word-index-badge">Kata {activeIndex+1}</span></div><div className="form-fields"><label className="field"><span><b>01</b> Jenis kata <i>نوع الكلمة</i></span><select value={answer.kind} onChange={e=>setField('kind',e.target.value as WordKind)}>{wordKinds.map(v=><option key={v}>{v}</option>)}</select></label><label className="field"><span><b>02</b> Kedudukan nahwu <i>المحل الإعرابي</i></span><select value={answer.position} onChange={e=>setField('position',e.target.value)}>{positions.map(v=><option key={v}>{v}</option>)}</select></label><label className="field"><span><b>03</b> Status i‘rab <i>الحالة الإعرابية</i></span><select value={answer.state} onChange={e=>setField('state',e.target.value as CaseState)}>{caseStates.map(v=><option key={v}>{v}</option>)}</select></label><label className="field"><span><b>04</b> Tanda i‘rab <i>علامة الإعراب</i></span><select value={answer.sign} onChange={e=>setField('sign',e.target.value as Sign)}>{signs.map(v=><option key={v}>{v}</option>)}</select></label></div><button className="button-check" onClick={check}>✓ Periksa jawaban <span>→</span></button>{checked&&<div className={`feedback-box ${isCorrect?'success':'error'}`} role="status"><div className="feedback-title"><span>{isCorrect?'✓':'!'}</span><strong>{isCorrect?'Tepat sekali! Jawabanmu benar.':'Belum tepat. Coba periksa lagi.'}</strong></div><p>{isCorrect?word.explanation:'Periksa kembali jenis kata, kedudukan, status i‘rab, dan tandanya. Kamu bisa melihat petunjuk sebelum mencoba lagi.'}</p>{isCorrect&&<div className="full-irab" dir="rtl" lang="ar">{word.fullIrab}</div>}<button className="feedback-link" onClick={()=>setHint(true)}>Lihat petunjuk ↗</button></div>}<div className="analysis-footnote">ⓘ Jawaban diperiksa menggunakan kunci latihan terstruktur, bukan penilaian AI.</div></section></div>
+    <section className="exercise-library"><div className="section-heading"><div><span className="section-kicker">PERPUSTAKAAN LATIHAN</span><h2>Pilih sumber belajarmu</h2></div><span className="library-count">{available.length} latihan</span></div><div className="filter-row">{(['Semua','Umum','Teks klasik',"Al-Qur'an"] as const).map(s=><button key={s} className={`filter-pill ${source===s?'selected':''}`} onClick={()=>changeSource(s)}>{s==='Semua'?'Semua sumber':s}</button>)}</div><div className="exercise-list">{available.map((e,i)=><button key={e.id} className={`exercise-row ${exercise.id===e.id?'current':''}`} onClick={()=>chooseExercise(e)}><span className={`exercise-type-icon ${e.source==="Al-Qur'an"?'quran':e.source==='Teks klasik'?'classic':''}`}>{e.source==="Al-Qur'an"?'۞':e.source==='Teks klasik'?'ك':'ع'}</span><span className="exercise-row-text"><strong>{e.title}</strong><small>{e.source} · {e.topic}{e.reference?' · '+e.reference:''}</small></span><span className="exercise-arabic" dir="rtl">{e.sentence}</span><span className="row-arrow">↗</span></button>)}</div></section>
+   </>}
+   {activeTab==='Materi'&&<section className="content-panel"><div className="section-heading"><div><span className="section-kicker">PETA BELAJAR</span><h2>Materi Nahwu bertahap</h2></div><span className="library-count">5 kelompok materi</span></div><p className="panel-intro">Materi ini adalah peta kurikulum awal. Tiap pokok bahasan dapat dikembangkan menjadi penjelasan, contoh berharakat, latihan, dan evaluasi.</p><div className="lesson-grid">{lessonGroups.map((g,i)=><article className="lesson-card" key={g.title}><span className="lesson-number">MODUL 0{i+1}</span><h3>{g.title}</h3><p>{g.desc}</p><ul>{g.topics.map(t=><li key={t}>{t}</li>)}</ul><button className="button-secondary" onClick={()=>{setActiveTab('Latihan');setSource('Semua');}}>Latihan terkait ↗</button></article>)}</div><div className="notice"><span>ⓘ</span> Materi ringkas dan bank soal adalah fondasi awal, bukan pengganti kitab nahwu atau bimbingan guru. Materi lanjutan perlu ditinjau ahli sebelum dipublikasikan.</div></section>}
+   {activeTab==='Progres'&&<section className="content-panel"><div className="section-heading"><div><span className="section-kicker">RIWAYAT BELAJAR</span><h2>Progres belajarmu</h2></div></div>{user?.role==='Siswa'?<><div className="progress-hero"><div><span className="section-kicker">AKUN SISWA · MODE DEMO</span><h3>{user.name}</h3><p>{user.email}</p><p>Jawaban benar tersimpan di browser ini dan terikat pada email demo.</p></div><div className="progress-big"><strong>{completed.length}</strong><span>jawaban benar</span></div></div><div className="progress-track large"><span style={{width:`${Math.min(100,completed.length/Math.max(1,totalWords)*100)}%`}}/></div><p className="panel-intro">{completed.length} jawaban benar dari {totalWords} kesempatan kata dalam bank latihan. Data demo hanya tersimpan di browser/perangkat ini; belum tersinkron ke server.</p></>:<div className="empty-state"><h3>Progres pribadi</h3><p>{user?'Panel ini khusus akun siswa.':'Kamu sedang menjadi pengunjung. Login sebagai siswa untuk mencoba penyimpanan progres demo.'}</p>{!user&&<button className="button-primary" onClick={()=>setShowLogin(true)}>Masuk sebagai siswa</button>}</div>}</section>}
+   {activeTab==='Panel'&&user&&<section className="content-panel"><div className="section-heading"><div><span className="section-kicker">RUANG KERJA {user.role.toUpperCase()}</span><h2>{user.role==='Guru'?'Perkembangan siswa':'Pengelolaan website'}</h2></div><span className="demo-pill">MODE DEMO</span></div><div className="notice warning"><span>⚠</span> Ini masih prototipe lokal. Peran dipilih saat demo login dan tidak memiliki keamanan server. Jangan gunakan data siswa nyata sebelum autentikasi, database, dan izin akses server dikonfigurasi.</div>{user.role==='Guru'?<><div className="stats-grid"><div className="stat-card"><div className="stat-icon green">♙</div><div><span className="stat-label">AKUN SISWA DEMO</span><strong>{studentRecords.length}</strong></div></div><div className="stat-card"><div className="stat-icon cream">✓</div><div><span className="stat-label">JAWABAN BENAR</span><strong>{studentRecords.reduce((n,r)=>n+r.correct,0)}</strong></div></div><div className="stat-card"><div className="stat-icon lavender">▤</div><div><span className="stat-label">BANK LATIHAN</span><strong>{exercises.length}</strong></div></div></div><div className="table-wrap"><table><thead><tr><th>Nama siswa</th><th>Email demo</th><th>Benar</th><th>Pembaruan</th></tr></thead><tbody>{studentRecords.length?studentRecords.map(r=><tr key={r.user.email}><td>{r.user.name}</td><td>{r.user.email}</td><td>{r.correct}</td><td>{new Date(r.updatedAt).toLocaleString('id-ID')}</td></tr>):<tr><td colSpan={4}>Belum ada progres siswa demo di browser ini.</td></tr>}</tbody></table></div></>:<><div className="admin-grid"><article className="admin-card"><span className="section-kicker">KONTEN</span><h3>Bank soal dan materi</h3><p>{exercises.length} latihan dari kalimat umum, teks klasik, dan potongan Al-Qur'an. Saat ini data berada di <code>data/exercises.ts</code>.</p><button className="button-secondary" onClick={()=>setActiveTab('Materi')}>Lihat kurikulum ↗</button></article><article className="admin-card"><span className="section-kicker">PENGGUNA</span><h3>Manajemen peran</h3><p>Versi produksi perlu panel untuk membuat akun, menetapkan role, mengelola kelas, dan mengatur izin melalui database.</p><button className="button-secondary" onClick={()=>setShowLogin(true)}>Ganti akun demo ↗</button></article><article className="admin-card"><span className="section-kicker">KUALITAS</span><h3>Review materi</h3><p>Validasi setiap kunci i‘rab, alternatif analisis, sumber ayat, dan pembahasan sebelum dipakai untuk penilaian formal.</p></article></div></>}</section>}
+   <footer className="main-footer"><span>بِسْمِ الْعِلْمِ نَبْدَأُ</span><p>Bedah I‘rab · Belajar Nahwu dengan memahami alasan.</p><span className="footer-version">PROTOTIPE 0.2.0</span></footer>
+  </div></section>
+  {showLogin&&<div className="modal-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setShowLogin(false);}}><section className="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title"><button className="modal-close" onClick={()=>setShowLogin(false)} aria-label="Tutup">×</button><div className="modal-mark">بِ</div><div className="eyebrow">AKUN BEDAH I‘RAB</div><h2 id="login-title">Masuk ke ruang belajar</h2><p>Prototipe ini menggunakan akun demo lokal untuk menguji alur peran. Belum memakai autentikasi sungguhan.</p><label className="field"><span>Nama tampilan</span><input value={loginName} onChange={e=>setLoginName(e.target.value)} placeholder="Contoh: Imelda"/></label><label className="field"><span>Email demo</span><input type="email" value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} placeholder="nama@email.com"/></label><label className="field"><span>Masuk sebagai</span><select value={loginRole} onChange={e=>setLoginRole(e.target.value as Role)}><option>Siswa</option><option>Guru</option><option>Admin</option></select></label><div className="role-note">{loginRole==='Siswa'?'Siswa: mengerjakan latihan dan melihat progres lokal.':loginRole==='Guru'?'Guru: melihat catatan siswa demo pada browser yang sama.':'Admin: melihat ringkasan konten dan rancangan pengelolaan.'}</div><button className="button-check" onClick={login}>Lanjutkan dalam mode demo →</button><small className="modal-warning">Jangan masukkan kata sandi atau data pribadi nyata. Role demo tidak mengamankan halaman.</small></section></div>}
+ </main>;
 }

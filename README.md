@@ -1,124 +1,48 @@
-# Bedah I'rab — Laboratorium Nahwu
+# Bedah I‘rab — prototipe v0.2
 
-Prototipe website interaktif untuk latihan membedah kata dalam bahasa Arab. Antarmuka berbahasa Indonesia dengan istilah Nahwu Arab, desain responsif, filter sumber latihan, pemilihan kata, form analisis, petunjuk, pemeriksaan jawaban, dan pembahasan singkat.
+Website latihan Nahwu interaktif: 20 kalimat contoh, pilihan sumber (umum, teks klasik, Al-Qur’an), materi berkelompok, analisis kata, dan alur peran siswa/guru/admin dalam **mode demo lokal**.
 
-## Fitur pada versi 0.1
+## Jalankan lokal
 
-- Pilih latihan dari kategori kalimat umum, teks klasik bergaya pembelajaran, dan potongan Al-Qur'an.
-- Klik kata pada kalimat Arab untuk memilih kata yang akan dianalisis.
-- Isi jenis kata, kedudukan nahwu, status i'rab, dan tanda i'rab.
-- Periksa jawaban terhadap kunci yang telah ditentukan.
-- Tampilkan petunjuk dan penjelasan i'rab lengkap jika jawaban benar.
-- Tata letak responsif untuk desktop dan ponsel.
-
-## Perbaikan deployment Vercel
-
-Versi perbaikan ini memperbarui Next.js ke `15.5.28`, React dan React DOM ke `19.1.10`, serta menyamakan `eslint-config-next` dengan Next.js. Pembaruan Next.js mengikuti rilis keamanan 14 Oktober 2026.
-
-Impor flat config ESLint memakai ekstensi `.js` agar sesuai dengan modul yang ditunjukkan pada log build Vercel.
-
-Setelah mengekstrak ZIP, jalankan `npm install` untuk membuat `package-lock.json` baru, lalu `npm run build` sebelum push ke GitHub.
-
-## Teknologi
-
-- Next.js App Router
-- React + TypeScript
-- CSS responsif tanpa library komponen tambahan
-- Bank soal statis di `data/exercises.ts`
-
-## Menjalankan di komputer
-
-1. Pasang Node.js versi LTS.
-2. Ekstrak folder proyek.
-3. Buka terminal di folder `bedah-irab`.
-4. Jalankan:
-
-   ```bash
-   npm install
-   npm run dev
-   ```
-
-5. Buka `http://localhost:3000`.
-
-Untuk memeriksa build produksi:
+Persyaratan: Node.js LTS.
 
 ```bash
-npm run build
+npm install
+npm run dev
 ```
 
-## Mengubah dan menambah soal
+Buka http://localhost:3000. Untuk tes produksi: `npm run build`.
 
-Edit `data/exercises.ts`. Setiap latihan berisi:
+## Fitur saat ini
 
-- `id`: ID unik.
-- `source`: `Umum`, `Teks klasik`, atau `Al-Qur'an`.
-- `sentence`: kalimat Arab berharakat.
-- `translation`: terjemahan.
-- `context`: catatan pembelajaran.
-- `words`: daftar kata dan kunci analisis.
+- Bank latihan awal mencakup mubtada’-khabar, fā‘il-maf‘ūl bih, na‘t-man‘ūt, iḍāfah, jar-majrūr, inna, kāna, fi‘il muḍāri‘ manṣūb/majzūm, ḥāl, ẓarf, ‘aṭaf, badal, dan beberapa potongan ayat.
+- Pengunjung dapat berlatih tanpa login; progres tidak ditampilkan sebagai riwayat akun.
+- Mode siswa demo menyimpan progres pada `localStorage` browser tersebut.
+- Mode guru/admin demo menampilkan alur dashboard dasar.
 
-Setiap objek kata memiliki `token`, `kind`, `position`, `state`, `sign`, `explanation`, dan `fullIrab`.
+## PENTING: autentikasi masih demo
 
-**Catatan akademik:** validasi bank jawaban dengan kitab nahwu/rujukan tepercaya sebelum menambahkan materi. Sebagian struktur bahasa Arab memiliki lebih dari satu analisis yang dapat diterima. Versi awal ini hanya menerima satu kombinasi jawaban per kata, jadi perlu diperluas untuk menerima alternatif jawaban yang sah.
+Login saat ini hanya simulasi frontend. Pilihan role tidak diverifikasi oleh server, data guru dibaca dari browser yang sama, dan `localStorage` tidak menyinkronkan data antarperangkat. Jangan gunakan untuk siswa sungguhan atau menyimpan data pribadi. Role demo **bukan kontrol akses keamanan**.
+
+Untuk produksi, pasang autentikasi dan database (misalnya Supabase Auth + PostgreSQL), lalu lakukan role-check dan Row Level Security di server/database. Jangan percaya role yang berasal dari browser. Guru harus hanya dapat melihat siswa dalam kelas yang ditugaskan; admin perlu izin eksplisit. `supabase/schema.sql` berisi skema awal yang perlu direview sebelum dipakai.
+
+## Menambah latihan
+
+Edit `data/exercises.ts`. Setiap latihan menyimpan sumber, judul, kalimat, topik, terjemahan, konteks, daftar kata, kunci analisis, penjelasan, dan rumusan i‘rab. Periksa kaidah dan semua alternatif analisis dengan guru/rujukan Nahwu sebelum publikasi, khususnya materi Al-Qur’an.
 
 ## Deploy ke GitHub dan Vercel
 
-### A. Unggah ke GitHub
+1. Buat repository GitHub dan push seluruh isi folder ini.
+2. Import repository pada https://vercel.com/new.
+3. Framework preset Next.js; build command `npm run build`.
+4. Deploy dan periksa log build.
 
-Buat repository baru di GitHub, misalnya `bedah-irab`. Jangan tambahkan README dari GitHub jika sudah memakai README ini. Di terminal dalam folder proyek:
+Untuk memperbarui: `git add .`, `git commit -m "Update Bedah I'rab"`, lalu `git push`.
 
-```bash
-git init
-git add .
-git commit -m "Initial Bedah I'rab prototype"
-git branch -M main
-git remote add origin https://github.com/USERNAME/bedah-irab.git
-git push -u origin main
-```
+## Langkah berikutnya untuk produksi
 
-Ganti `USERNAME` dengan username GitHub kamu dan sesuaikan URL repository.
-
-### B. Deploy ke Vercel
-
-1. Masuk ke https://vercel.com/ lalu login dengan GitHub.
-2. Pilih **Add New → Project**.
-3. Import repository `bedah-irab`.
-4. Pastikan framework terdeteksi sebagai **Next.js**.
-5. Tidak perlu menambahkan environment variables untuk versi ini.
-6. Klik **Deploy** dan tunggu proses build selesai.
-7. Setiap push baru ke branch yang terhubung akan memicu deployment baru.
-
-### C. Jika menggunakan GitHub Desktop
-
-Alternatif untuk pengguna yang belum terbiasa dengan Git:
-
-1. Ekstrak ZIP proyek.
-2. Buka GitHub Desktop dan pilih **Add Existing Repository** atau **Create a New Repository**.
-3. Commit file proyek lalu **Publish repository**.
-4. Import repository tersebut di Vercel seperti langkah di atas.
-
-## Batasan versi pertama
-
-- Jawaban diperiksa dengan kunci statis, bukan AI.
-- Progres hanya berada di state aplikasi; belum tersimpan lintas kunjungan/perangkat.
-- Belum ada login, database, panel admin, atau editor bank soal.
-- Contoh teks klasik `الْعِلْمُ نَافِعٌ` merupakan contoh buatan bergaya teks pembelajaran, bukan kutipan dari kitab tertentu.
-- Contoh Al-Qur'an yang disertakan adalah `اللَّهُ الصَّمَدُ` dari QS. Al-Ikhlāṣ [112]: 2.
-
-## Ide pengembangan berikutnya
-
-1. Tambahkan alternatif jawaban benar dan penilaian per bidang.
-2. Simpan progres ke `localStorage`, lalu migrasikan ke database jika perlu.
-3. Tambahkan mode ujian dengan timer dan rekap hasil.
-4. Tambahkan materi morfologi (ṣarf): akar kata, wazan, bentuk fi'il, dan perubahan ṣighah.
-5. Tambahkan peta relasi antarkata.
-6. Pertimbangkan Supabase untuk akun dan penyimpanan progres.
-7. Jika kelak memakai AI, jadikan AI sebagai pemberi penjelasan tambahan; jangan jadikan jawabannya satu-satunya sumber kebenaran nahwu.
-
-
-### Catatan versi perbaikan
-- `next`: `15.5.28`
-- `react` dan `react-dom`: `19.1.10`
-- `eslint-config-next`: `15.5.28`
-
-Setelah instalasi, periksa versi aktual dengan `npm ls next react react-dom eslint-config-next`. Jika Vercel masih menampilkan peringatan keamanan, pastikan commit terbaru sudah ter-push dan lakukan redeploy tanpa memakai deployment lama.
+1. Konfigurasi Supabase Auth dan halaman login/daftar sungguhan.
+2. Tambahkan tabel profil, kelas, keanggotaan, percobaan, dan progres.
+3. Aktifkan RLS dan uji tiap role dengan akun berbeda.
+4. Buat CRUD bank soal untuk admin dan manajemen kelas untuk guru.
+5. Tambahkan validasi materi dan tes otomatis untuk jawaban i‘rab.
