@@ -11,6 +11,14 @@ Prototipe website interaktif untuk latihan membedah kata dalam bahasa Arab. Anta
 - Tampilkan petunjuk dan penjelasan i'rab lengkap jika jawaban benar.
 - Tata letak responsif untuk desktop dan ponsel.
 
+## Perbaikan deployment Vercel
+
+Versi perbaikan ini memperbarui Next.js ke `15.5.28`, React dan React DOM ke `19.1.10`, serta menyamakan `eslint-config-next` dengan Next.js. Pembaruan Next.js mengikuti rilis keamanan 14 Oktober 2026.
+
+Impor flat config ESLint memakai ekstensi `.js` agar sesuai dengan modul yang ditunjukkan pada log build Vercel.
+
+Setelah mengekstrak ZIP, jalankan `npm install` untuk membuat `package-lock.json` baru, lalu `npm run build` sebelum push ke GitHub.
+
 ## Teknologi
 
 - Next.js App Router
@@ -106,3 +114,11 @@ Alternatif untuk pengguna yang belum terbiasa dengan Git:
 5. Tambahkan peta relasi antarkata.
 6. Pertimbangkan Supabase untuk akun dan penyimpanan progres.
 7. Jika kelak memakai AI, jadikan AI sebagai pemberi penjelasan tambahan; jangan jadikan jawabannya satu-satunya sumber kebenaran nahwu.
+
+
+### Catatan versi perbaikan
+- `next`: `15.5.28`
+- `react` dan `react-dom`: `19.1.10`
+- `eslint-config-next`: `15.5.28`
+
+Setelah instalasi, periksa versi aktual dengan `npm ls next react react-dom eslint-config-next`. Jika Vercel masih menampilkan peringatan keamanan, pastikan commit terbaru sudah ter-push dan lakukan redeploy tanpa memakai deployment lama.
