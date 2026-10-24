@@ -1,6 +1,6 @@
-# Bedah I‘rab — prototipe v0.3
+# Bedah I‘rab — prototipe v0.4
 
-Website latihan Nahwu interaktif dengan jalur belajar berurutan, 10 soal pada setiap submateri, syarat nilai minimal 80% untuk membuka materi berikutnya, dan tanpa contoh ayat Al-Qur’an pada bank latihan.
+Website latihan Nahwu interaktif dengan jalur belajar berurutan, target 10 soal pada setiap submateri, ambang nilai 80%, dan alur permohonan guru yang dapat mengirim undangan email unik setelah disetujui admin.
 
 ## Jalankan lokal
 
@@ -11,45 +11,80 @@ npm install
 npm run dev
 ```
 
-Buka http://localhost:3000. Untuk tes produksi: `npm run build`.
+Buka http://localhost:3000. Jalankan `npm run typecheck`, `npm run lint`, dan `npm run build` sebelum deploy.
 
-## Perubahan v0.3
+## Fitur v0.4
 
-- Jalur belajar memuat 22 submateri × 10 soal = 220 slot soal.
-- Soal dikerjakan berurutan. Setiap soal harus diperiksa sebelum lanjut; nilai tiap materi dihitung dari 10 soal.
-- Minimal 8/10 soal harus benar untuk membuka submateri berikutnya.
-- Contoh ayat Al-Qur’an dihapus dari bank latihan.
-- Formulir publik tidak menyediakan pilihan role. Jika Supabase dikonfigurasi, pendaftaran memakai Supabase Auth dan akun baru otomatis menjadi siswa.
-- Ditambahkan route server untuk membuat undangan (khusus admin) dan menukarkan kode undangan untuk role guru/admin.
-- Ditambahkan rancangan skema Supabase untuk profil, kurikulum, soal, kelas, percobaan, progres, dan undangan role.
+- 22 submateri × 10 slot soal = 220 slot latihan dalam jalur bertahap.
+- Materi berikutnya mensyaratkan minimal 80% (8 dari 10 soal).
+- Contoh ayat Al-Qur’an tidak digunakan pada bank latihan.
+- Pengunjung bisa mencoba latihan; pendaftaran publik hanya membuat akun siswa.
+- Halaman publik **Jadi Guru** untuk mengajukan nama, email, institusi, pengalaman, dan alasan bergabung.
+- Admin yang sudah terautentikasi dapat melihat permohonan guru, menolak, atau menyetujui.
+- Persetujuan membuat token acak yang disimpan dalam bentuk hash, ditujukan ke email calon guru, hanya sekali pakai, dan kedaluwarsa dalam 48 jam.
+- Email undangan dikirim melalui Resend. Link undangan hanya mengaktifkan role jika calon guru login/daftar dengan email yang sama dengan email undangan.
+- Tidak ada pendaftaran admin publik. Akun admin awal harus dibuat melalui proses penyiapan manual yang terdokumentasi di bawah.
+- Data permohonan guru dan undangan tidak dapat diakses langsung oleh client; endpoint server menggunakan service-role key setelah verifikasi admin.
 
-**Catatan kualitas bank soal:** 220 slot soal dibangun dari bank kalimat dan analisis yang tersedia sebagai kerangka prototipe. Sebagian submateri lanjutan masih memakai contoh dasar yang dipetakan sebagai latihan awal; sebelum digunakan sebagai penilaian formal, setiap soal harus ditulis/ditinjau khusus untuk indikator submaterinya oleh pengajar Nahwu. Jangan menganggap semua 220 slot sudah merupakan bank soal final yang telah diverifikasi.
+**Kualitas bank soal:** 220 slot adalah kerangka latihan dari bank kalimat dan analisis yang ada. Beberapa submateri lanjutan masih membutuhkan soal unik yang disusun dan ditinjau pengajar Nahwu. Jangan gunakan untuk penilaian formal sebelum semua soal diverifikasi.
 
-## Penyimpanan saat ini
+## Konfigurasi Supabase dan email
 
-Jika variabel Supabase belum diisi, login berjalan dalam **mode demo lokal**. Jika `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` diisi, halaman login menggunakan Supabase Auth. Namun, progres latihan pada versi ini masih disimpan di `localStorage`, belum ditulis ke tabel `attempts`/`lesson_progress`. Progres belum tersinkron antarperangkat. Jangan gunakan untuk penilaian siswa sungguhan sebelum penyimpanan progres dan validasi nilai server-side diintegrasikan.
+1. Buat proyek Supabase.
+2. Buka SQL Editor, tinjau lalu jalankan seluruh `supabase/schema.sql` pada proyek pengembangan.
+3. Pada Authentication → URL Configuration, atur Site URL dan Redirect URLs untuk domain lokal/deploy. Aktifkan verifikasi email.
+4. Salin `.env.example` menjadi `.env.local`, lalu isi:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` — **server-only, jangan pernah gunakan awalan `NEXT_PUBLIC_` atau commit ke Git**
+   - `RESEND_API_KEY` — server-only
+   - `RESEND_FROM_EMAIL` — alamat pengirim/domain yang sudah diverifikasi di Resend
+   - `APP_BASE_URL` — URL website, misalnya `http://localhost:3000` saat lokal dan URL HTTPS produksi saat deploy
+5. Restart server setelah mengubah environment variables.
 
-## Rancangan Supabase untuk produksi
+### Membuat admin pertama dengan aman
 
-File `supabase/schema.sql` menyediakan rancangan PostgreSQL dan Row Level Security (RLS). Sebelum dipakai, jalankan pada proyek Supabase pengembangan, tinjau seluruh policy, lalu uji dengan akun berbeda untuk tiap role.
+1. Daftarkan akun pemilik lewat formulir pendaftaran siswa dengan email yang kamu kendalikan.
+2. Selesaikan verifikasi email dan login sekali agar profil dibuat oleh trigger database.
+3. Di Supabase SQL Editor, ganti alamat berikut dengan email pemilik yang benar-benar kamu kendalikan dan jalankan **hanya sekali**:
 
-1. Buat proyek di Supabase.
-2. Jalankan `supabase/schema.sql` melalui SQL Editor setelah direview.
-3. Konfigurasikan Supabase Auth (verifikasi email, reset password, dan batasan redirect URL).
-4. Salin `.env.example` menjadi `.env.local`, lalu isi URL dan anon key dari proyek Supabase. `SUPABASE_SERVICE_ROLE_KEY` hanya untuk route server tepercaya, tidak boleh memakai awalan `NEXT_PUBLIC_`, masuk ke Git, atau dikirim ke browser.
-5. Buat akun pemilik/admin pertama secara manual: daftar dengan email pribadimu melalui Supabase Auth, lalu di SQL Editor jalankan `update public.profiles set role = 'admin' where id = (select id from auth.users where email = 'EMAIL_ADMIN_KAMU');`. Jalankan hanya untuk email admin awal yang kamu kendalikan. Akun publik lain tetap otomatis menjadi `student`.
-6. Uji alur signup/sign-in Supabase Auth. Trigger profil di SQL otomatis membuat akun baru dengan role `student`.
-7. Endpoint `POST /api/admin/invitations` menerima sesi admin dan membuat kode undangan sekali pakai. Kirimkan kode secara aman kepada email yang diundang; pengiriman email otomatis belum ditambahkan.
-8. Pengguna masuk dengan email yang diundang, lalu menukarkan kode melalui formulir login. Endpoint `POST /api/invitations/redeem` memverifikasi sesi, email, kedaluwarsa, dan penggunaan kode sebelum menetapkan role.
-9. Implementasikan penyimpanan percobaan/progres melalui route server/RPC yang memvalidasi kunci jawaban dan menghitung nilai di server. Jangan menerima skor dari browser sebagai sumber kebenaran.
-10. Uji RLS: siswa hanya melihat progres sendiri; guru hanya melihat siswa pada kelas yang ditugaskan; admin mengelola konten dan akun. Jangan membuka akses tabel hanya karena UI menyembunyikan tombol.
+```sql
+update public.profiles
+set role = 'admin', updated_at = now()
+where id = (
+  select id from auth.users
+  where lower(email) = lower('EMAIL_ADMIN_KAMU')
+);
+```
 
-**Penting:** Supabase Auth dan endpoint undangan baru aktif setelah variabel environment diisi dan skema SQL diterapkan. Progres latihan tetap lokal pada versi ini; jangan publikasikan sebagai platform produksi sampai penulisan progres, validasi nilai server-side, email verifikasi, dan uji RLS selesai.
+4. Pastikan query hanya memperbarui satu baris dan cek `public.profiles` untuk memastikan role menjadi `admin`.
+5. Keluar lalu masuk kembali ke website. Jangan membuat endpoint publik untuk menetapkan role admin.
+
+### Cara permohonan guru berjalan
+
+1. Calon guru membuka menu **Jadi Guru** dan mengirim pengajuan.
+2. Pengajuan tersimpan dengan status `pending` dan muncul pada panel admin setelah Supabase dikonfigurasi.
+3. Admin memilih **Setujui & kirim email** atau **Tolak**.
+4. Jika disetujui, server membuat token acak, menyimpan hash token, dan mengirim email via Resend. Link berlaku 48 jam dan hanya dapat digunakan sekali.
+5. Calon guru membuka link, lalu daftar atau masuk menggunakan email yang diundang. Jika mendaftar, verifikasi email sesuai alur Supabase. Setelah login, sistem menukar undangan melalui endpoint server dan menetapkan role `teacher`.
+6. Jika pengiriman email gagal, permohonan dikembalikan ke `pending`; admin dapat memperbaiki konfigurasi lalu mencoba lagi.
+
+Jangan bagikan service-role key atau Resend API key. Pastikan domain pengirim telah diverifikasi di Resend sebelum mencoba mengirim email sungguhan.
+
+## Keamanan dan batasan yang diketahui
+
+- RLS aktif pada tabel dan tabel permohonan guru/undangan tidak memiliki policy client; akses dikelola oleh route server terpercaya.
+- API admin memeriksa access token dan role admin dari database setiap permintaan.
+- Endpoint publik permohonan memiliki validasi input dan honeypot sederhana, tetapi **belum memiliki rate limiting/CAPTCHA**. Tambahkan perlindungan spam sebelum membuka aplikasi untuk publik luas.
+- Progres latihan masih disimpan di `localStorage`, bukan tabel `attempts`/`lesson_progress`, sehingga belum tersinkron lintas perangkat. Nilai juga belum divalidasi penuh di server. Jangan gunakan sebagai platform penilaian siswa sungguhan sebelum dua hal tersebut diselesaikan.
+- Panel guru masih prototipe; tampilan progres demo belum terhubung ke progres Supabase per kelas.
+- Kode undangan dari URL disimpan sementara di `localStorage` agar dapat bertahan selama verifikasi email. Token satu kali dan masa berlaku 48 jam; gunakan perangkat/browser yang sama sampai proses aktivasi selesai.
+- Build belum dijamin pada semua lingkungan. Jalankan typecheck/lint/build dan uji dengan akun siswa, guru, dan admin sebelum deploy.
 
 ## Deploy
 
-1. Push folder proyek ke repository GitHub.
-2. Import repository pada Vercel.
-3. Pastikan framework Next.js dan build command `npm run build`.
-4. Setelah integrasi Supabase dibuat, tambahkan environment variables di pengaturan Vercel.
-5. Periksa log build dan uji akses siswa/guru/admin sebelum berbagi website.
+1. Push proyek ke GitHub tanpa `.env.local` atau secret.
+2. Import repository ke Vercel.
+3. Tambahkan environment variables yang sama di Project Settings → Environment Variables.
+4. Gunakan `APP_BASE_URL` sebagai URL HTTPS website yang benar-benar digunakan.
+5. Uji formulir pengajuan, email, undangan kedaluwarsa/satu kali, mismatch email, dan akses RLS sebelum membuka pendaftaran publik.

@@ -76,6 +76,24 @@ create table if not exists public.lesson_progress (
   primary key (student_id, lesson_id)
 );
 
+-- Public teacher applications are written/read only through trusted server routes.
+create table if not exists public.teacher_applications (
+  id uuid primary key default gen_random_uuid(),
+  full_name text not null,
+  email text not null,
+  institution text not null,
+  experience text not null default '',
+  motivation text not null,
+  status text not null default 'pending' check (status in ('pending', 'processing', 'approved', 'rejected')),
+  reviewed_by uuid references public.profiles(id),
+  reviewed_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists teacher_applications_email_idx on public.teacher_applications (lower(email));
+create unique index if not exists teacher_applications_one_active_per_email_idx
+  on public.teacher_applications (lower(email)) where status in ('pending', 'processing', 'approved');
+create index if not exists teacher_applications_status_created_idx on public.teacher_applications (status, created_at desc);
+
 -- Invitation records are managed server-side only. Store a hash, never a raw invite code.
 create table if not exists public.role_invitations (
   id uuid primary key default gen_random_uuid(),
@@ -96,7 +114,7 @@ as $$ select role from public.profiles where id = auth.uid() limit 1 $$;
 
 -- Prevent role escalation through a direct profile update. Trusted server routes use service_role.
 create or replace function public.prevent_untrusted_role_change()
-returns trigger language plpgsql security definer set search_path = public
+returns trigger language plpgsql security invoker set search_path = public
 as $$
 begin
   if new.role is distinct from old.role and coalesce(auth.role(), '') <> 'service_role' and current_user not in ('postgres', 'supabase_admin') then
@@ -134,6 +152,9 @@ alter table public.class_members enable row level security;
 alter table public.attempts enable row level security;
 alter table public.lesson_progress enable row level security;
 alter table public.role_invitations enable row level security;
+alter table public.teacher_applications enable row level security;
+-- Intentionally no client-facing RLS policies for teacher_applications or role_invitations.
+-- Public submissions and admin review are routed through server endpoints using service_role.
 
 -- Profiles: users can read/update their own non-role fields; role changes are server-side only.
 drop policy if exists profiles_select_self_or_admin on public.profiles;
@@ -142,6 +163,12 @@ using (id = auth.uid() or public.current_app_role() = 'admin');
 drop policy if exists profiles_update_self on public.profiles;
 create policy profiles_update_self on public.profiles for update to authenticated
 using (id = auth.uid()) with check (id = auth.uid());
+drop policy if exists profiles_teacher_read_assigned_students on public.profiles;
+create policy profiles_teacher_read_assigned_students on public.profiles for select to authenticated
+using (public.current_app_role() = 'teacher' and exists (
+  select 1 from public.class_members cm join public.classes c on c.id = cm.class_id
+  where cm.student_id = profiles.id and c.teacher_id = auth.uid()
+));
 -- Do not grant authenticated users direct INSERT/DELETE on profiles.
 
 -- Curriculum: published content is readable by guests/authenticated users; only admin manages it.

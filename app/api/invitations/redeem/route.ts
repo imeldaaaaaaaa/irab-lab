@@ -19,6 +19,7 @@ export async function POST(request: Request) {
   const authClient = createClient(url, anonKey, { auth: { persistSession: false } });
   const { data: { user }, error: authError } = await authClient.auth.getUser(token);
   if (authError || !user?.email) return NextResponse.json({ error: 'Sesi login tidak valid.' }, { status: 401 });
+  if (!user.email_confirmed_at) return NextResponse.json({ error: 'Verifikasi email terlebih dahulu sebelum mengaktifkan role undangan.' }, { status: 403 });
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const tokenHash = createHash('sha256').update(code).digest('hex');
