@@ -1,6 +1,6 @@
-# Bedah I‘rab — prototipe v0.2
+# Bedah I‘rab — prototipe v0.3
 
-Website latihan Nahwu interaktif: 20 kalimat contoh, pilihan sumber (umum, teks klasik, Al-Qur’an), materi berkelompok, analisis kata, dan alur peran siswa/guru/admin dalam **mode demo lokal**.
+Website latihan Nahwu interaktif dengan jalur belajar berurutan, 10 soal pada setiap submateri, syarat nilai minimal 80% untuk membuka materi berikutnya, dan tanpa contoh ayat Al-Qur’an pada bank latihan.
 
 ## Jalankan lokal
 
@@ -13,43 +13,43 @@ npm run dev
 
 Buka http://localhost:3000. Untuk tes produksi: `npm run build`.
 
-## Fitur saat ini
+## Perubahan v0.3
 
-- Bank latihan awal mencakup mubtada’-khabar, fā‘il-maf‘ūl bih, na‘t-man‘ūt, iḍāfah, jar-majrūr, inna, kāna, fi‘il muḍāri‘ manṣūb/majzūm, ḥāl, ẓarf, ‘aṭaf, badal, dan beberapa potongan ayat.
-- Pengunjung dapat berlatih tanpa login; progres tidak ditampilkan sebagai riwayat akun.
-- Mode siswa demo menyimpan progres pada `localStorage` browser tersebut.
-- Mode guru/admin demo menampilkan alur dashboard dasar.
+- Jalur belajar memuat 22 submateri × 10 soal = 220 slot soal.
+- Soal dikerjakan berurutan. Setiap soal harus diperiksa sebelum lanjut; nilai tiap materi dihitung dari 10 soal.
+- Minimal 8/10 soal harus benar untuk membuka submateri berikutnya.
+- Contoh ayat Al-Qur’an dihapus dari bank latihan.
+- Formulir publik tidak menyediakan pilihan role. Jika Supabase dikonfigurasi, pendaftaran memakai Supabase Auth dan akun baru otomatis menjadi siswa.
+- Ditambahkan route server untuk membuat undangan (khusus admin) dan menukarkan kode undangan untuk role guru/admin.
+- Ditambahkan rancangan skema Supabase untuk profil, kurikulum, soal, kelas, percobaan, progres, dan undangan role.
 
-## PENTING: autentikasi masih demo
+**Catatan kualitas bank soal:** 220 slot soal dibangun dari bank kalimat dan analisis yang tersedia sebagai kerangka prototipe. Sebagian submateri lanjutan masih memakai contoh dasar yang dipetakan sebagai latihan awal; sebelum digunakan sebagai penilaian formal, setiap soal harus ditulis/ditinjau khusus untuk indikator submaterinya oleh pengajar Nahwu. Jangan menganggap semua 220 slot sudah merupakan bank soal final yang telah diverifikasi.
 
-Login saat ini hanya simulasi frontend. Pilihan role tidak diverifikasi oleh server, data guru dibaca dari browser yang sama, dan `localStorage` tidak menyinkronkan data antarperangkat. Jangan gunakan untuk siswa sungguhan atau menyimpan data pribadi. Role demo **bukan kontrol akses keamanan**.
+## Penyimpanan saat ini
 
-Untuk produksi, pasang autentikasi dan database (misalnya Supabase Auth + PostgreSQL), lalu lakukan role-check dan Row Level Security di server/database. Jangan percaya role yang berasal dari browser. Guru harus hanya dapat melihat siswa dalam kelas yang ditugaskan; admin perlu izin eksplisit. `supabase/schema.sql` berisi skema awal yang perlu direview sebelum dipakai.
+Jika variabel Supabase belum diisi, login berjalan dalam **mode demo lokal**. Jika `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` diisi, halaman login menggunakan Supabase Auth. Namun, progres latihan pada versi ini masih disimpan di `localStorage`, belum ditulis ke tabel `attempts`/`lesson_progress`. Progres belum tersinkron antarperangkat. Jangan gunakan untuk penilaian siswa sungguhan sebelum penyimpanan progres dan validasi nilai server-side diintegrasikan.
 
-## Menambah latihan
+## Rancangan Supabase untuk produksi
 
-Edit `data/exercises.ts`. Setiap latihan menyimpan sumber, judul, kalimat, topik, terjemahan, konteks, daftar kata, kunci analisis, penjelasan, dan rumusan i‘rab. Periksa kaidah dan semua alternatif analisis dengan guru/rujukan Nahwu sebelum publikasi, khususnya materi Al-Qur’an.
+File `supabase/schema.sql` menyediakan rancangan PostgreSQL dan Row Level Security (RLS). Sebelum dipakai, jalankan pada proyek Supabase pengembangan, tinjau seluruh policy, lalu uji dengan akun berbeda untuk tiap role.
 
-## Deploy ke GitHub dan Vercel
+1. Buat proyek di Supabase.
+2. Jalankan `supabase/schema.sql` melalui SQL Editor setelah direview.
+3. Konfigurasikan Supabase Auth (verifikasi email, reset password, dan batasan redirect URL).
+4. Salin `.env.example` menjadi `.env.local`, lalu isi URL dan anon key dari proyek Supabase. `SUPABASE_SERVICE_ROLE_KEY` hanya untuk route server tepercaya, tidak boleh memakai awalan `NEXT_PUBLIC_`, masuk ke Git, atau dikirim ke browser.
+5. Buat akun pemilik/admin pertama secara manual: daftar dengan email pribadimu melalui Supabase Auth, lalu di SQL Editor jalankan `update public.profiles set role = 'admin' where id = (select id from auth.users where email = 'EMAIL_ADMIN_KAMU');`. Jalankan hanya untuk email admin awal yang kamu kendalikan. Akun publik lain tetap otomatis menjadi `student`.
+6. Uji alur signup/sign-in Supabase Auth. Trigger profil di SQL otomatis membuat akun baru dengan role `student`.
+7. Endpoint `POST /api/admin/invitations` menerima sesi admin dan membuat kode undangan sekali pakai. Kirimkan kode secara aman kepada email yang diundang; pengiriman email otomatis belum ditambahkan.
+8. Pengguna masuk dengan email yang diundang, lalu menukarkan kode melalui formulir login. Endpoint `POST /api/invitations/redeem` memverifikasi sesi, email, kedaluwarsa, dan penggunaan kode sebelum menetapkan role.
+9. Implementasikan penyimpanan percobaan/progres melalui route server/RPC yang memvalidasi kunci jawaban dan menghitung nilai di server. Jangan menerima skor dari browser sebagai sumber kebenaran.
+10. Uji RLS: siswa hanya melihat progres sendiri; guru hanya melihat siswa pada kelas yang ditugaskan; admin mengelola konten dan akun. Jangan membuka akses tabel hanya karena UI menyembunyikan tombol.
 
-1. Buat repository GitHub dan push seluruh isi folder ini.
-2. Import repository pada https://vercel.com/new.
-3. Framework preset Next.js; build command `npm run build`.
-4. Deploy dan periksa log build.
+**Penting:** Supabase Auth dan endpoint undangan baru aktif setelah variabel environment diisi dan skema SQL diterapkan. Progres latihan tetap lokal pada versi ini; jangan publikasikan sebagai platform produksi sampai penulisan progres, validasi nilai server-side, email verifikasi, dan uji RLS selesai.
 
-Untuk memperbarui: `git add .`, `git commit -m "Update Bedah I'rab"`, lalu `git push`.
+## Deploy
 
-## Langkah berikutnya untuk produksi
-
-1. Konfigurasi Supabase Auth dan halaman login/daftar sungguhan.
-2. Tambahkan tabel profil, kelas, keanggotaan, percobaan, dan progres.
-3. Aktifkan RLS dan uji tiap role dengan akun berbeda.
-4. Buat CRUD bank soal untuk admin dan manajemen kelas untuk guru.
-5. Tambahkan validasi materi dan tes otomatis untuk jawaban i‘rab.
-
-
-## Pembaruan bank latihan v0.2.1
-
-- Bank latihan diperluas menjadi 50 kalimat, termasuk beberapa variasi untuk mubtada’-khabar, na‘t-man‘ūt, iḍāfah, fā‘il-maf‘ūl bih, inna/kāna, fi‘il muḍāri‘, jar-majrūr, ḥāl, ‘aṭaf, ẓarf makān, dan badal.
-- Di halaman Materi, pilih topik untuk menyaring latihan yang relevan. Topik yang belum memiliki bank soal khusus akan ditandai sebagai materi yang sedang disiapkan.
-- Kunci dan pembahasan tetap berupa data terstruktur; periksa materi Arab bersama pengajar sebelum digunakan untuk penilaian formal.
+1. Push folder proyek ke repository GitHub.
+2. Import repository pada Vercel.
+3. Pastikan framework Next.js dan build command `npm run build`.
+4. Setelah integrasi Supabase dibuat, tambahkan environment variables di pengaturan Vercel.
+5. Periksa log build dan uji akses siswa/guru/admin sebelum berbagi website.
